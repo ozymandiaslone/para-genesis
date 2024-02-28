@@ -1,4 +1,5 @@
-
+// crow kinda makes it impossible to do what
+// i wanted to do with zooming here
 
 pub struct Camera {
     x: f32,

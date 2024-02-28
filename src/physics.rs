@@ -7,20 +7,7 @@ pub trait PhysObj {
     fn xvel(&self) -> f32;
     fn yvel(&self) -> f32;
     fn mass(&self) -> u64;
-    fn force_vectors(&self) -> Vec<ForceVector> /*TODO force vector type*/;
-
-    //fn set_xvel(&mut self, xvel: f32);
-    //fn set_yvel(&mut self, yvel: f32);
-    //
-    // i think that really, we want
-    // to add a field to our PhysObjs
-    // ( and therefore everything that is one?)
-    // force_vectors(_, _) which is a 
-    // im thinking a tuple? of 
-    // vectors acting upon the body,
-    // then during each update you simply
-    // update the physics bada-bing
-    // bada-boom
+    fn force_vectors(&self) -> Vec<ForceVector>;
     fn add_vector(&mut self, force_vec: ForceVector);
 }
 
@@ -31,12 +18,6 @@ pub fn calculate_gravity<T: PhysObj>(body1: &T, body2: &T) -> ForceVector {
     let (x1, y1) = (body2.xpos(), body2.ypos());
     let (m0, m1) = (body1.mass() as f32, body2.mass() as f32);
     
-    /*
-    let xterms = (x1 - x0) * (x1 - x0);
-    let yterms = (y1 - y0) * (y1 - y0);
-    let r = fast_root(xterms + yterms);
-    let theta = f32::atan2(y1 - y0, x1 - x0);
-    */
     let dx = x1 - x0;
     let dy = y1 - y0;
     let theta = f32::atan2(dy, dx);
@@ -52,8 +33,6 @@ pub fn calculate_gravity<T: PhysObj>(body1: &T, body2: &T) -> ForceVector {
     let fx = f * f32::cos(theta);
     let fy = f * f32::sin(theta);
 
-    //let fx = f32::cos(theta) * f;
-    //let fy = f32::sin(theta) * f;
     (fx, fy)
     // therefore... i think that the body2
     // components are just the negative 

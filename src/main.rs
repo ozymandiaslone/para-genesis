@@ -28,8 +28,9 @@ fn main() -> Result<(), crow::Error> {
 
     let event_loop = EventLoop::new();
     let mut ctx = Context::new(WindowBuilder::new(), &event_loop)?;
-    // RESIZE WINDOW
     ctx.resize_window(desired_width, desired_height);
+
+
     // TODO I hate to say it, but I think this needs
     // to be encapsulated into whatever is being drawn...
     // ill do it later. Not super pressing rn. 

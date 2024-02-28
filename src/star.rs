@@ -87,9 +87,6 @@ impl Star {
                 self.frame_idx = 0;
             }
         }
-        let (win_width, win_height): (i32, i32) = ctx.window().inner_size().into();
-        let (tex_x, tex_y) = self.frames[self.frame_idx].dimensions();
-               // do this in the main? update_gravity_physics(stars);
 
         let mut final_vector: ForceVector = (0., 0.);
         //assume this self as a force_vectors full of vectors
@@ -108,55 +105,9 @@ impl Star {
 
         self.xpos += self.xvel * elapsed.as_secs_f32();
         self.ypos += self.yvel * elapsed.as_secs_f32();
-        // see we need to multiply by 3 here because 
-        // the scaling in the draw config is messing it up
-        // ideally we need to get the draw config in scope here
-        /*
-        if (self.xpos ) > win_width as f32 { 
-            self.xpos = 0.;
-        }
-        if self.xpos < 0. { 
-            self.xpos = win_width as f32;
-        }
-        if (self.ypos ) > win_height as f32 { 
-            self.ypos = 0.;
-        }
-        if self.ypos < 0. { 
-            self.ypos = win_height as f32;
-        }
-        */
-        //id REALLY like to check collisions here...
-        //idk if its possible tho
 
     }
 
-    // update the properties of the star
-    pub fn update(&mut self, ctx: &mut Context) {
-
-        let now = Instant::now();
-        let elapsed = now.duration_since(self.last_update);
-        // update the frame to display 7x per second
-        if elapsed >= Duration::from_secs_f32(1. / 7.) {
-            self.last_update = now;
-            if self.frame_idx < self.frames.len() - 1  {
-                self.frame_idx += 1;
-            } else {
-                self.frame_idx = 0;
-            }
-        }
-        let (win_width, win_height): (i32, i32) = ctx.window().inner_size().into();
-        let (tex_x, tex_y) = self.frames[self.frame_idx].dimensions();
-        self.xpos = self.xpos + self.xvel;
-        self.ypos = self.ypos + self.yvel;
-        // see we need to multiply by 3 here because 
-        // the scaling in the draw config is messing it up
-        // ideally we need to get the draw config in scope here
-        if (self.xpos ) > win_width as f32 
-            || self.xpos < 0. { self.xvel = -(self.xvel) };
-        if (self.ypos ) > win_height as f32
-            || self.ypos < 0. { self.yvel = -(self.yvel) };
-
-    }
     // takes in a surface and a texture, 
     // then we just draw the texture which corresponds
     // to the current frame index
@@ -169,13 +120,9 @@ impl Star {
         let (tex_x, tex_y) = self.frames[self.frame_idx].dimensions();
 
         let (scl_x, scl_y) = (1, 1);
-
-        /*
-        let draw_x = (self.xpos - camera.x) * camera.zoom;
-        let draw_y = (self.ypos - camera.y) * camera.zoom;
-        let draw_width = tex_x as f32 * camera.zoom;
-        let draw_height = tex_y as f32 * camera.zoom;
-        */
+        
+        // crow does not allow downscaling of images 
+        // cus it is 'pixel perfect' or something
         let draw_config = DrawConfig {
             //scale: (draw_width as u32, draw_height as u32),
             scale: (1, 1),
@@ -259,7 +206,7 @@ fn draw_star_to_image(
             let xterms = ((x - x0) * (x - x0)) as f32;
             let yterms = ((y - y0) * (y - y0)) as f32;
             let d = fast_root( xterms + yterms );
-            //
+
             //if this pixel is inside the radius of the circle...
             if d <= r {
                 let noise_val = perlin.get([x as f64 / 2., y as f64 / 2.]);
@@ -339,7 +286,7 @@ fn fast_root(n :f32) -> f32 {
     1. / fast_inverse_sqrt(n)
 }
 
-//TODO this collison checking should be
+//TODO this collison checking could be
 //implemented generically i bet
 pub fn check_collisions(stars: &mut Vec<Star>) {
     for i in 0..stars.len() {
@@ -373,31 +320,30 @@ pub fn check_collisions(stars: &mut Vec<Star>) {
 
 
             if distance <= (stars[i].radius + stars[j].radius) {
-                // Calculate the unit normal vector
 
                 // Calculate the relative velocity
                 let rvx = stars[j].xvel - stars[i].xvel;
                 let rvy = stars[j].yvel - stars[i].yvel;
 
                 // Calculate the relative velocity in terms of the normal direction
-                let velAlongNormal = rvx * nx + rvy * ny;
+                let norm_vec = rvx * nx + rvy * ny;
 
                 // Do not resolve if velocities are separating
-                if velAlongNormal > 0. {
+                if norm_vec > 0. {
                     continue;
                 }
 
                 // Calculate the impulse scalar
                 let e = 0.97;  // Coefficient of restitution
-                let impulse = -(1. + e) * velAlongNormal / ((1. / stars[i].mass as f32) +  (1. / stars[j].mass as f32));
+                let impulse = -(1. + e) * norm_vec / ((1. / stars[i].mass as f32) +  (1. / stars[j].mass as f32));
 
                 // Apply impulse
-                let impulseX = impulse * nx;
-                let impulseY = impulse * ny;
-                stars[i].xvel -= 1. / stars[i].mass as f32 * impulseX;
-                stars[i].yvel -= 1. / stars[i].mass as f32 * impulseY;
-                stars[j].xvel += 1. / stars[j].mass as f32 * impulseX;
-                stars[j].yvel += 1. / stars[j].mass as f32 * impulseY;
+                let impulse_x = impulse * nx;
+                let impulse_y = impulse * ny;
+                stars[i].xvel -= 1. / stars[i].mass as f32 * impulse_x;
+                stars[i].yvel -= 1. / stars[i].mass as f32 * impulse_y;
+                stars[j].xvel += 1. / stars[j].mass as f32 * impulse_x;
+                stars[j].yvel += 1. / stars[j].mass as f32 * impulse_y;
             }
         }
     }
@@ -443,12 +389,6 @@ pub fn load_stars(loaded: &mut bool, stars: &mut Vec<Star>, ctx: &mut Context) {
         stars.push(initialize_rand_star(win_width, win_height, ctx));
         //stars.push(initialize_particle(win_width, win_height, ctx));
     }
-    /*
-    stars.push(Star::new(0., 0., 0., 0., 10000000., 19., ctx));
-    stars.push(Star::new(win_width as f32 , 0., -0., 0., 10000000., 19., ctx));
-    stars.push(Star::new(0., win_height as f32 , 0., -0., 10000000., 19., ctx));
-    stars.push(Star::new(win_width as f32 , win_height as f32 , -0., -0., 10000000., 19., ctx));
-    */
     *loaded = true;
 
 }
